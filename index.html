@@ -75,10 +75,16 @@
   #shareCard{display:none;}
   #shareCard.show{display:block;}
   #shareText{width:100%; height:150px; font-size:12px; border:1px solid var(--line); border-radius:10px; padding:10px;}
-  #toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
-    background:#2b2b26; color:#fff; padding:12px 18px; border-radius:999px; font-size:14px;
+  #toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);    background:#2b2b26; color:#fff; padding:12px 18px; border-radius:999px; font-size:14px;
     opacity:0; pointer-events:none; transition:all .25s; z-index:99; max-width:92vw; text-align:center;}
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #gabyModal{position:fixed; inset:0; background:rgba(20,25,20,.55); display:none; align-items:flex-end; justify-content:center; z-index:60; padding:0;}
+  #gabyModal.show{display:flex;}
+  #gabySheet{background:#fff; border-radius:18px 18px 0 0; width:100%; max-width:560px; max-height:88vh; overflow:auto; padding:18px 16px 26px;}
+  #gabySheet h2{margin:0 0 6px;}
+  #gabySheet textarea{width:100%; min-height:84px; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:14px; font-family:inherit; box-sizing:border-box;}
+  #gabySum{font-size:13px; color:var(--mut); margin:8px 0;}
+  #gabySum b{color:var(--ink);}
   .ver-tag{position:fixed; right:10px; bottom:8px; font-size:10px; color:#b9b3a1;}
 </style>
 </head>
@@ -126,6 +132,9 @@
       <button class="big warn" id="resetBtn"><span id="resetT"></span><span id="resetSub" style="display:block;font-size:11px;font-weight:400;"></span></button>
       <button class="big primary" id="pdfBtn"><span id="pdfT"></span></button>
     </div>
+    <div class="btnrow" style="margin-top:10px;">
+      <button class="big" id="gabyBtn" style="border:2px solid var(--green); color:var(--green);"><span id="gabyBtnT"></span></button>
+    </div>
   </div>
 
   <div class="card" id="shareCard">
@@ -141,6 +150,22 @@
 
 <div id="toast"></div>
 <div class="ver-tag" id="verTag"></div>
+
+<div id="gabyModal">
+  <div id="gabySheet">
+    <h2 id="gabyTitle"></h2>
+    <p class="note" id="gabyNote" style="margin:0 0 8px;"></p>
+    <p class="note" style="margin:0 0 4px;"><b id="gabyWillSend"></b></p>
+    <div id="gabySum"></div>
+    <label class="note" for="gabyComment" style="display:block;margin:10px 0 4px;"><b id="gabyCommentL"></b></label>
+    <textarea id="gabyComment"></textarea>
+    <div class="btnrow" style="margin-top:14px;">
+      <button class="big primary" id="gabySend"><span id="gabySendT"></span></button>
+      <button class="big" id="gabyCopyBtn"><span id="gabyCopyT"></span></button>
+      <button class="big" id="gabyClose"><span id="gabyCloseT"></span></button>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -257,6 +282,19 @@ sumPdfT:"RESUMEN DEL ESTIMADO",roomDetailT:"detalle por habitación",
 iItem:"Concepto",iCost:"Total",
 clientLabel:"Cliente: ",projLabel:"Proyecto: ",dateLabel:"Fecha",
 termNote:"Estimado de referencia válido por 30 días. El cliente recibirá una propuesta formal por texto y correo.",
+gabyBtnT:"📨 Enviar a Gaby",
+gabyTitle:"Enviar a Gaby",
+gabyNote:"Gaby preparará el borrador de la propuesta en DripJobs y lo vinculará al trabajo en CompanyCam. Tú lo revisas y lo envías.",
+gabyWillSend:"Se enviará:",
+gabyCommentL:"Instrucciones para Gaby (opcional)",
+gabyCommentPh:"Ej. solo pintura y drywall, el cliente quiere empezar en octubre…",
+gabySend:"Enviar 📨",
+gabyCopy:"Copiar texto",
+gabyClose:"Cerrar",
+gabyNeedClient:"Agrega el nombre del cliente primero",
+gabyMailOpen:"Abriendo tu app de correo…",
+gabyHandoffCopied:"Texto copiado — pégalo en el chat con Gaby",
+
 estTitle:"THE HILLCREST COMPANY — ESTIMADO ON-SITE"
 },
 en:{
@@ -298,6 +336,19 @@ sumPdfT:"ESTIMATE SUMMARY",roomDetailT:"room detail",
 iItem:"Item",iCost:"Total",
 clientLabel:"Client: ",projLabel:"Project: ",dateLabel:"Date",
 termNote:"Reference estimate valid for 30 days. The customer will receive a formal proposal by text and email.",
+gabyBtnT:"📨 Send to Gaby",
+gabyTitle:"Send to Gaby",
+gabyNote:"Gaby will draft the DripJobs proposal and link the CompanyCam job. You review and send.",
+gabyWillSend:"Will send:",
+gabyCommentL:"Instructions for Gaby (optional)",
+gabyCommentPh:"E.g. painting + drywall only, client wants to start in October…",
+gabySend:"Send 📨",
+gabyCopy:"Copy handoff text",
+gabyClose:"Close",
+gabyNeedClient:"Add the client name first",
+gabyMailOpen:"Opening your mail app…",
+gabyHandoffCopied:"Text copied — paste it in the chat with Gaby",
+
 estTitle:"THE HILLCREST COMPANY — ON-SITE ESTIMATE"
 }};
 function B(es,en){return {es:es,en:en};}
@@ -308,9 +359,12 @@ function S(id,key){const e=document.getElementById(id);if(e)e.textContent=t(key)
 let lang=state.lang||"es";
 function applyLang(){
   ["appTitle","appSub","cliH","clientL","addrH","addrNote","roomsH","addRoomT","tradeH",
-   "pdfH","resetT","resetSub","pdfT","shareH","copyT","closeT","verTag"]
+   "pdfH","resetT","resetSub","pdfT","shareH","copyT","closeT","verTag",
+   "gabyBtnT","gabyTitle","gabyNote","gabyWillSend","gabyCommentL"]
    .forEach(id=>S(id,id));
+  S("gabySendT","gabySend");S("gabyCopyT","gabyCopy");S("gabyCloseT","gabyClose");
   const ai=$("addrInput"); if(ai) ai.placeholder=t("addrPh");
+  const gc=$("gabyComment"); if(gc) gc.placeholder=t("gabyCommentPh");
   $("langEs").classList.toggle("on",lang==="es");
   $("langEn").classList.toggle("on",lang==="en");
   renderRooms(); renderTrade(); renderTradeRates(); renderOpenRates(); renderScope(); syncInputs();
@@ -615,7 +669,93 @@ function initButtons(){
     try{document.execCommand("copy");toast(t("copied"));}catch(e){toast(t("copyManual"));}
   });
   $("closeShare").addEventListener("click",()=>$("shareCard").classList.remove("show"));
+  $("gabyBtn").addEventListener("click",openGabyModal);
+  $("gabyClose").addEventListener("click",()=>$("gabyModal").classList.remove("show"));
+  $("gabyModal").addEventListener("click",e=>{if(e.target===$("gabyModal"))$("gabyModal").classList.remove("show");});
+  $("gabySend").addEventListener("click",sendGabyMail);
+  $("gabyCopyBtn").addEventListener("click",copyGabyText);
 }
+
+/* ================= Enviar a Gaby: traspaso por correo ================= */
+const GABY_MAIL="projects@thehillcrestcompany.com";
+const HANDOFF_KEYS=[
+  ["pTotal","pTotal"],["wTrad","wTrad"],["wPeel","wPeel"],["wRem","wRem"],
+  ["wnPen","wnPen"],["wnTra","wnTra"],["wnCus","wnCus"],
+  ["wnPen36","wnPen36"],["wnTra36","wnTra36"],["wnCus36","wnCus36"],
+  ["prPrime","prPrime"],["skim","skim"],["tFlat","tFlat"],["tKnock","tKnock"],["tPop","tPop"]
+];
+function handoffTotals(c){
+  const o={};HANDOFF_KEYS.forEach(([k])=>{o[k]=Math.round((c.combined[k]||0)*100)/100;});return o;
+}
+function buildHandoff(){
+  const c=calc();
+  const data={
+    v:1,
+    client:state.client||"",
+    address:state.address||"",
+    date:new Date().toISOString().slice(0,10),
+    lang:lang,
+    rooms:state.rooms.map(r=>({n:r.name||"",lvl:r.lvl,L:+r.L||0,W:+r.W||0,H:+r.H||0,
+      v:r.vault?1:0,d:+r.doors||0,cd:+r.cdoors||0,w:+r.wins||0})),
+    rates:Object.assign({},state.rates),
+    totals:handoffTotals(c),
+    comment:($("gabyComment").value||"").trim()
+  };
+  return data;
+}
+function handoffSubject(d){
+  return "[OnSite-Gaby] "+(d.client||"")+(d.address?" — "+d.address:"");
+}
+function handoffBody(d){
+  const lines=[];
+  lines.push((lang==="es"?"Cliente":"Client")+": "+(d.client||"—"));
+  if(d.address)lines.push((lang==="es"?"Dirección":"Address")+": "+d.address);
+  lines.push((lang==="es"?"Fecha":"Date")+": "+d.date);
+  lines.push((lang==="es"?"Habitaciones":"Rooms")+": "+d.rooms.length);
+  lines.push("");
+  lines.push(lang==="es"?"TOTALES POR OFICIO:":"TRADE TOTALS:");
+  HANDOFF_KEYS.forEach(([k])=>{
+    lines.push("  "+k+": $"+(d.totals[k]||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
+  });
+  if(d.comment){lines.push("");lines.push((lang==="es"?"Instrucciones":"Instructions")+": "+d.comment);}
+  lines.push("");
+  lines.push("---BEGIN-ONSITE-DATA---");
+  lines.push(JSON.stringify(d));
+  lines.push("---END-ONSITE-DATA---");
+  return lines.join("\n");
+}
+function openGabyModal(){
+  if(!(state.client||"").trim()){toast(t("gabyNeedClient"));return;}
+  const c=calc(),d=buildHandoff();
+  const bits=HANDOFF_KEYS.filter(([k])=>(d.totals[k]||0)>0)
+    .map(([k])=>"<b>"+k+"</b>: $"+d.totals[k].toLocaleString("en-US",{maximumFractionDigits:0}));
+  $("gabySum").innerHTML=
+    "<b>"+escHtml(d.client)+"</b>"+(d.address?" · "+escHtml(d.address):"")+
+    " · "+d.rooms.length+" "+(lang==="es"?"hab.":"rms")+"<br>"+bits.join(" · ");
+  $("gabyModal").classList.add("show");
+}
+function sendGabyMail(){
+  const d=buildHandoff();
+  const href="mailto:"+GABY_MAIL+"?subject="+encodeURIComponent(handoffSubject(d))+"&body="+encodeURIComponent(handoffBody(d));
+  toast(t("gabyMailOpen"));
+  const a=document.createElement("a");a.href=href;a.style.display="none";
+  document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);
+  setTimeout(()=>$("gabyModal").classList.remove("show"),800);
+}
+function copyGabyText(){
+  const d=buildHandoff();
+  const txt=handoffSubject(d)+"\n\n"+handoffBody(d);
+  const done=()=>toast(t("gabyHandoffCopied"));
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));}
+  else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");done();}catch(e){toast(t("copyManual"));}
+  ta.remove();
+}
+function escHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 /* ================= PDF del estimado (horizontal, alcance elegible) ================= */
 const GREEN="0.118 0.361 0.247",GOLD="0.788 0.635 0.153",DARK="0.17 0.17 0.15",GRAY="0.54 0.52 0.47";
