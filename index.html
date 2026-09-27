@@ -109,17 +109,14 @@
     <h2 id="roomsH"></h2>
     <div id="roomList"></div>
     <button class="big" id="addRoom"><span id="addRoomT"></span></button>
+    <div id="openRates" style="margin-top:14px;"></div>
   </div>
 
   <div class="card">
     <h2 id="tradeH"></h2>
     <div class="tabs" id="tradeTabs"></div>
     <div class="tscroll"><div id="tradeTable"></div></div>
-  </div>
-
-  <div class="card">
-    <h2 id="setH"></h2>
-    <div id="setBody"></div>
+    <div id="tradeRates" style="margin-top:14px;"></div>
   </div>
 
   <div class="card">
@@ -311,12 +308,12 @@ function S(id,key){const e=document.getElementById(id);if(e)e.textContent=t(key)
 let lang=state.lang||"es";
 function applyLang(){
   ["appTitle","appSub","cliH","clientL","addrH","addrNote","roomsH","addRoomT","tradeH",
-   "setH","pdfH","resetT","resetSub","pdfT","shareH","copyT","closeT","verTag"]
+   "pdfH","resetT","resetSub","pdfT","shareH","copyT","closeT","verTag"]
    .forEach(id=>S(id,id));
   const ai=$("addrInput"); if(ai) ai.placeholder=t("addrPh");
   $("langEs").classList.toggle("on",lang==="es");
   $("langEn").classList.toggle("on",lang==="en");
-  renderRooms(); renderTrade(); renderSettings(); renderScope(); syncInputs();
+  renderRooms(); renderTrade(); renderTradeRates(); renderOpenRates(); renderScope(); syncInputs();
   const ta=$("shareText");
   if(ta&&$("shareCard").classList.contains("show")) ta.value=estimateText();
 }
@@ -486,7 +483,7 @@ function renderTrade(){
     const b=document.createElement("button");
     b.className="tab"+(k===trade?" on":"");b.type="button";
     b.textContent=nm(TRADES[k].name);
-    b.addEventListener("click",()=>{state.trade=k;save();renderTrade();});
+    b.addEventListener("click",()=>{state.trade=k;save();renderTrade();renderTradeRates();});
     tabs.appendChild(b);
   });
   let h='<table><tr><th>'+t("colRoom")+'</th><th>'+t("colLevel")+'</th>';
@@ -512,26 +509,39 @@ function renderTrade(){
 
 /* ================= UI: ajustes ================= */
 const SETTING_GROUPS=[
-  {g:"setPaint",items:[["wallRate","wallRateL"],["ceilRate","ceilRateL"],["baseRate","baseRateL"],["paintWall","paintWallL"],["paintCeil","paintCeilL"],["paintBase","paintBaseL"]]},
-  {g:"setWp",items:[["trad","tradL"],["peel","peelL"],["removal","removalL"]]},
-  {g:"setWn",items:[["pencil","pencilL"],["traditional","traditionalL"],["custom","customL"]]},
-  {g:"setPs",items:[["primeWall","primeWallL"],["primeCeil","primeCeilL"],["skimWall","skimWallL"],["skimCeil","skimCeilL"]]},
-  {g:"setTx",items:[["flat","flatL"],["knockdown","knockL"],["popcorn","popL"]]},
-  {g:"setOpen",items:[["doorDed","doorDedL"],["closetDed","closetDedL"],["winDed","winDedL"]]}
+  {trade:"painting",items:[["wallRate","wallRateL"],["ceilRate","ceilRateL"],["baseRate","baseRateL"],["paintWall","paintWallL"],["paintCeil","paintCeilL"],["paintBase","paintBaseL"]]},
+  {trade:"wallpaper",items:[["trad","tradL"],["peel","peelL"],["removal","removalL"]]},
+  {trade:"wainscoting",items:[["pencil","pencilL"],["traditional","traditionalL"],["custom","customL"]]},
+  {trade:"primeskim",items:[["primeWall","primeWallL"],["primeCeil","primeCeilL"],["skimWall","skimWallL"],["skimCeil","skimCeilL"]]},
+  {trade:"textures",items:[["flat","flatL"],["knockdown","knockL"],["popcorn","popL"]]},
+  {trade:"rooms",items:[["doorDed","doorDedL"],["closetDed","closetDedL"],["winDed","winDedL"]]}
 ];
-function renderSettings(){
-  const box=$("setBody");box.innerHTML="";
-  SETTING_GROUPS.forEach(g=>{
-    const sec=document.createElement("div");sec.className="sec";
-    let h='<div class="sec-head"><b>'+t(g.g)+'</b></div><div class="fees">';
-    g.items.forEach(it=>{h+='<div><label class="f">'+t(it[1])+'</label><input type="number" min="0" step="any" id="'+it[0]+'Input"></div>';});
-    h+='</div>';sec.innerHTML=h;box.appendChild(sec);
-  });
-  SET_KEYS.forEach(k=>{
-    $(""+k+"Input").addEventListener("input",e=>{
-      state[k]=e.target.value===""?"":num(e.target.value);save();renderTrade();
+function rateGroupHTML(items){
+  let h='<div class="fees">';
+  items.forEach(it=>{h+='<div><label class="f">'+t(it[1])+'</label><input type="number" min="0" step="any" id="'+it[0]+'Input"></div>';});
+  return h+'</div>';
+}
+function wireRateInputs(root,after){
+  root.querySelectorAll("input").forEach(inp=>{
+    const k=inp.id.replace(/Input$/,"");
+    inp.addEventListener("input",()=>{
+      state[k]=inp.value===""?"":num(inp.value);save();after();
     });
   });
+}
+function renderTradeRates(){
+  const g=SETTING_GROUPS.find(x=>x.trade===state.trade);
+  const box=$("tradeRates");
+  box.innerHTML='<div class="sec"><div class="sec-head"><b>⚙️ '+esc(nm(TRADES[state.trade].name))+'</b></div>'+rateGroupHTML(g.items)+'</div>';
+  wireRateInputs(box,()=>{renderTrade();});
+  syncInputs();
+}
+function renderOpenRates(){
+  const g=SETTING_GROUPS.find(x=>x.trade==="rooms");
+  const box=$("openRates");
+  box.innerHTML='<div class="sec"><div class="sec-head"><b>'+t("setOpen")+'</b></div>'+rateGroupHTML(g.items)+'</div>';
+  wireRateInputs(box,()=>{renderRooms();renderTrade();});
+  syncInputs();
 }
 function syncInputs(){
   $("clientInput").value=state.client||"";
@@ -780,7 +790,7 @@ async function sharePdf(){
 renderRooms();
 initAddress();
 initButtons();
-renderSettings();
+renderTradeRates();renderOpenRates();
 renderScope();
 syncInputs();
 document.getElementById("langEs").addEventListener("click",()=>setLang("es"));
